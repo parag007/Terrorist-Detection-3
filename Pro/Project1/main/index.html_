@@ -1,0 +1,172 @@
+﻿<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="foundation.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="d3-context-menu.css" />
+    <link href="tooltip.css" rel="stylesheet" />
+    <style>
+        /*.cont {
+            width: 800px;
+            height: 500px;
+            border: 1px solid black;
+            margin:10px;
+        }*/
+        .hoverCss {
+            fill:red;
+            border:1px solid #ccc;
+            padding:5px;
+            font-size:14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="RenameNodeModal" class="reveal-modal" data-reveal aria-labelledby="modalTitle" aria-hidden="true" role="dialog">
+        <h2 id="modalTitle">Rename Node</h2>
+        <form id="RenameNodeForm">
+            <div class="row">
+                <div class="large-12 columns">
+                    <label>
+                        Node name
+                        <input type="text" class="inputName" id='RenameNodeName' placeholder="node name" />
+                    </label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="large-8 columns">
+                    &nbsp;
+                </div>
+                <div class="large-4 columns">
+                    <a href="#" class="button info" onclick="close_rename_node_modal()">Cancel</a>
+                    <a href="#" class="button success" onclick="rename_node()">Rename</a>
+                </div>
+            </div>
+        </form>
+        <a class="close-reveal-modal" aria-label="Close">&#215;</a>
+    </div>
+
+    <div id="CreateNodeModal" class="reveal-modal" data-reveal aria-labelledby="modalTitle" aria-hidden="true" role="dialog">
+        <h2 id="modalTitle">Create Node</h2>
+        <form id="CreateNodeForm">
+            <div class="row">
+                <div class="large-12 columns">
+                    <div id="dataFieldsCreate">
+                        <div><span><b>docID</b></span> : <input type="text" id="n_docID" value=""></div>
+                        <div><span><b>docText</b></span> : <input type="text" id="n_docText" value=""></div>
+                        <div>
+                            <span><b>Date</b></span> : <input type="text" id="n_Date" value="">
+                        </div><div><span><b>Phone</b></span> : <input type="text" id="n_Phone" value=""></div>
+                        <div><span><b>Organization</b></span> : <input type="text" id="n_Organization" value=""></div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="large-8 columns">
+                    &nbsp;
+                </div>
+                <div class="large-4 columns">
+                    <a href="#" class="button info" onclick="close_create_node_modal()">Cancel</a>
+                    <a href="#" class="button success" onclick="CreateRecord()">Create</a>
+                </div>
+            </div>
+        </form>
+        <a class="close-reveal-modal" aria-label="Close">&#215;</a>
+    </div>
+
+    <!-- 1 ============= -->
+    <div id="ShowInfoModal" class="reveal-modal" data-reveal aria-labelledby="modalTitle" aria-hidden="true" role="dialog">
+        <h2 id="infoTitle">Info</h2>
+        <form id="infoNodeForm">
+            <div class="row">
+                <div class="large-12 columns">
+                    <div id="dataFieldsShow"></div>
+                    <div id="dataFieldsEdit"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="large-8 columns">
+                    &nbsp;
+                </div>
+                <div class="large-4 columns">
+                    <a href="#" class="button info" onclick="close_modal()">Cancel</a>
+                    <input id="btnUpdateRecord" class="button success" type="button" name="Update" value="Update" onclick="UpdateRecord();" />
+                    <input id="btnEdit" class="button success" type="button" name="edit" value="Edit" onclick="ToggleShowEdit(true);" />
+                    <!--<a href="#" class="button success" onclick="create_node()">Create</a>-->
+                </div>
+            </div>
+        </form>
+        <a class="close-reveal-modal" aria-label="Close">&#215;</a>
+    </div>
+    <!-- 1 ============= -->
+    <!-- 2 ============= -->
+    <div id="MsgModal" class="reveal-modal" data-reveal aria-labelledby="modalTitle" aria-hidden="true" role="dialog">
+        <h2>Info</h2>
+        <form id="msgNodeForm">
+            <div class="row">
+                <div class="large-12 columns">
+                    <div id="msgDiv">
+
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="large-8 columns">
+                    &nbsp;
+                </div>
+                <div class="large-4 columns">
+                    <!--<a href="#" class="button info" onclick="close_modal()">Ok</a>-->
+                    <!--<a href="#" class="button success" onclick="create_node()">Create</a>-->
+                </div>
+            </div>
+        </form>
+        <a class="close-reveal-modal" aria-label="Close">&#215;</a>
+    </div>
+    <!-- 2 ============= -->
+
+
+    <div class="cont" id="tree-container"></div>
+
+    <script src="d3.v3.min.js"></script>
+    <script src="dndTree.js"></script>
+    <script src="d3-context-menu.js"></script>
+    <script src="underscore-min.js"></script>
+    <script src="jquery.js"></script>
+    <script src="fastclick.js"></script>
+    <script src="foundation.min.js"></script>
+    <script src="tooltip.js"></script>
+    <script>
+        var webBaseUrl = window.location.protocol + '//' + window.location.host + '/';
+        var serviceUrl = webBaseUrl + 'service/service.asmx/';
+
+        var viewerWidth = $(document).width()-10;
+        var viewerHeight = $(document).height()-10;
+
+        // for the first initialization
+        $('document').ready(function () {
+            GetReady();
+        });
+        function GetReady() {
+            //alert('in GetReady');
+            $(document).foundation();
+            $(document).on('opened', '[data-reveal]', function () {
+                var element = $(".inputName:visible").first();
+                element.focus(function () {
+                    this.selectionStart = this.selectionEnd = this.value.length;
+                });
+                element.focus();
+            });
+            //$('#RenameNodeForm').submit(function (e) {
+            //    rename_node();
+            //    return false;
+            //});
+            //$('#CreateNodeForm').submit(function (e) {
+            //    create_node();
+            //    return false;
+            //});
+            //var treeJSON = d3.json("tree.json", draw_tree);
+            //var treeJSON = d3.json("http://localhost:38328/Services/TriplivedService.asmx/GetTable", draw_tree);
+            var treeJSON = d3.json(serviceUrl + "GetTable", draw_tree);
+        }
+    </script>
+</body>
+</html>
